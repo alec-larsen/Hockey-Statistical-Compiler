@@ -1,0 +1,26 @@
+[MASTER]
+ignore=__pycache__
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-many-return-statements,
+    too-many-instance-attributes,
+    too-many-nested-blocks,
+    invalid-name
+
+[FORMAT]
+max-line-length=130
+
+[DESIGN]
+max-args=10
+max-locals=20
+max-branches=20
+max-statements=60

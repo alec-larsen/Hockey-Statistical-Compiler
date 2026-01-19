@@ -4,5 +4,4 @@
 __pycache__/
 Notes/
 .pytest_cache
-data/*
-!data/.gitkeep
+data/**/*.json

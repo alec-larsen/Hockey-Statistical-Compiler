@@ -6,12 +6,14 @@ import pytest
 from core import ingestion
 from core import constants
 
-@pytest.mark.parametrize("game_id", [
+game_ids = [
     2025020767, #Sample game from 2025-2026 season (1/19/2026)
     2025020716, #Sample game from 2025-2026 season (1/12/2026)
     2024020437, #Sample game from 2024-2025 season (12/08/2024)
     2023030127, #Sample playoff game (05/04/2024)
-])
+]
+
+@pytest.mark.parametrize("game_id", game_ids)
 
 def test_write_play_by_play(game_id: int):
     ingestion.write_play_by_play(game_id)

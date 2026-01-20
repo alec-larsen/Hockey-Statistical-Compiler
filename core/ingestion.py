@@ -44,13 +44,15 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
         raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
 
     if loud:
-        print("\033[92mPull of schedule to date for curretn season successful!\033[0m")
+        print("\033[92mPull of schedule to date for current season successful!\033[0m")
 
-    day = [d for d in sched_json["gameWeek"] if d["date"] == yesterday][0] #Obtain only yesterday's game data.
+    #Obtain only yesterday's game data.
+    #List comprehension generates a list with one element, so we take [0] to access it.
+    day = [d for d in sched_json["gameWeek"] if d["date"] == yesterday][0]
 
     #Since last four digits of game_id represent regular season order, so largest game_id is most recent game.
     #Find maximum game_id in yesterday's game data
     max_game_id = max([game["id"] for game in day["games"]])
 
-    #Last four digits of maximum game_id yield number of games taht have happened so far in the regular season.
+    #Last four digits of maximum game_id yield number of games that have happened so far in the regular season.
     return max_game_id % 10000

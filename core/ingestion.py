@@ -23,7 +23,18 @@ def write_play_by_play(game_id: int, loud: bool = CONNECTION_SUCCESS_MESSAGE) ->
     if loud:
         print(f"\033[92mPull of play-by-play for game {game_id} successful!\033[0m")
 
-    with open(constants.ROOT_DIRECTORY / "data" / "play-by-play" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
+    #First four digits of game_id are start year for season.
+    #If game_id starts with 2025, our game is from the current NHL season. Save it to the 'current' folder
+    if game_id // 1000000 == 2025:
+        folder = "current"
+    #If game_id starts with 2024, out game is from the last NHL season. Save it to the 'last' folder.
+    elif game_id // 1000000 == 2024:
+        folder = "last"
+    #Else, game is from neither the current or previosu season. We save it to the 'misc' folder
+    else:
+        folder = "misc"
+
+    with open(constants.ROOT_DIRECTORY / "data" / folder /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
         json.dump(pbp_json, file, indent=2)
 
 def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SUCCESS_MESSAGE) -> int:

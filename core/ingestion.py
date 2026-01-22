@@ -16,7 +16,17 @@ def clean_pbp(pbp_json: dict[str, Any]) -> None:
     #Keep only required keys, all others in raw data will not be used in the model.
     pbp_json = {k: pbp_json[k] for k in constants.KEEP_PBP}
 
-    # TODO: Further modify remaining keys to remove uneccesary data.
+    #Add margin of victory; positive for home win, negative for away win.
+    pbp_json["margin"] = pbp_json["homeTeam"]["score"] - pbp_json["awayTeam"]["score"]
+
+    #Reduce team desciptions to only keys listed in KEEP_TEAM.
+    pbp_json["homeTeam"] = {k: pbp_json["homeTeam"][k] for k in constants.KEEP_TEAM}
+    pbp_json["awayTeam"] = {k: pbp_json["awayTeam"][k] for k in constants.KEEP_TEAM}
+
+    #Flatten gameOutcome; will be used to note whether game went to overtime or shootout
+    pbp_json["gameOutcome"] = pbp_json["gameOutcome"]["lastPeriodType"]
+
+    # TODO: Flatten rosterSpots; remove unneccesary keys
     # TODO: Compress plays dictionaries into flat format; to be sent to Pandas dataframe.
 
 def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:

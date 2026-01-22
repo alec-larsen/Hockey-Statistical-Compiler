@@ -7,3 +7,4 @@ ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
 #Some keys contain information obtainable from kept keys (e.g. season from first four digits of game_id)
 #Others contain information not planned to be used in the model (e.g. startTimeUTC)
 KEEP_PBP = ["id", "gameDate", "awayTeam", "homeTeam", "gameOutcome", "plays", "rosterSpots"]
+KEEP_TEAM = ["id", "abbrev"]

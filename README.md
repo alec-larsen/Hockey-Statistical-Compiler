@@ -44,9 +44,9 @@ AneStat v2 is currently in active development as my main priority. The following
 root/
 ├── core/           # Key steps of pipeline
 ├── data/           # All files in data gitignored
-│   ├── current/    # Play-by-play data from current NHL season (25-26)
-│   ├── last/       # Play-by-play data from last NHL season (24-25)
-│   └── misc/       # All other data required by model
+│   ├── clean/      # Clean play-by-play data, intended for dataframe operations
+│   ├── misc/       # All other data required by model
+│   └── raw/        # Raw play-by-play data, directly pulled from NHL API
 ├── tests/          # Pytest suites
 ├── validation/     # Connection and structure checks
 ├── .gitignore

@@ -1,16 +1,33 @@
 import json
 import datetime
+from typing import Any
 
 import requests
 from core import constants
 from core.settings import CONNECTION_SUCCESS_MESSAGE
 
-def write_play_by_play(game_id: int, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
+def clean_pbp(pbp_json: dict[str, Any]) -> None:
     """
-    Pull play-by-play data from NHL API and write data to local JSON file.
+    Clean raw play-by-play data from NHL API into more concise format.
+
+    Args:
+        pbp_json (dict): Raw play-by-play data from NHL API, as Python dictionary.
+    """
+    #Keep only required keys, all others in raw data will not be used in the model.
+    pbp_json = {k: pbp_json[k] for k in constants.KEEP_PBP}
+
+    # TODO: Further modify remaining keys to remove uneccesary data.
+    # TODO: Compress plays dictionaries into flat format; to be sent to Pandas dataframe.
+
+def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
+    """
+    Pull play-by-play data from NHL API and write data to local system in JSON format.
+    
+    Option to write to JSON as is (raw), though default settings are to clean data into more usable format.
 
     Args:
         game_id (int): id of game to pull play-by-play of
+        raw (bool): If True, skip cleaning step, writing raw JSON pulled from API directly to file.
     """
     try:
         pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
@@ -23,19 +40,13 @@ def write_play_by_play(game_id: int, loud: bool = CONNECTION_SUCCESS_MESSAGE) ->
     if loud:
         print(f"\033[92mPull of play-by-play for game {game_id} successful!\033[0m")
 
-    #First four digits of game_id are start year for season.
-    #If game_id starts with 2025, our game is from the current NHL season. Save it to the 'current' folder
-    if game_id // 1000000 == 2025:
-        folder = "current"
-    #If game_id starts with 2024, out game is from the last NHL season. Save it to the 'last' folder.
-    elif game_id // 1000000 == 2024:
-        folder = "last"
-    #Else, game is from neither the current or previosu season. We save it to the 'misc' folder
-    else:
-        folder = "misc"
+    if raw:
+        with open(constants.ROOT_DIRECTORY / "data" / "raw" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
+            json.dump(pbp_json, file, indent=2)
 
-    with open(constants.ROOT_DIRECTORY / "data" / folder /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
-        json.dump(pbp_json, file, indent=2)
+    else:
+        #Cleaning step
+        raise NotImplementedError("Data cleaning currently in progress.")
 
 def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SUCCESS_MESSAGE) -> int:
     """

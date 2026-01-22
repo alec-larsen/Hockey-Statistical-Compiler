@@ -26,7 +26,14 @@ def clean_pbp(pbp_json: dict[str, Any]) -> None:
     #Flatten gameOutcome; will be used to note whether game went to overtime or shootout
     pbp_json["gameOutcome"] = pbp_json["gameOutcome"]["lastPeriodType"]
 
-    # TODO: Flatten rosterSpots; remove unneccesary keys
+    #Flatten rosterSpots; remove unneccesary keys
+    pbp_json["rosterSpots"] = [{
+        "teamId": player["teamId"],
+        "playerId": player["playerId"],
+        "name": player["firstName"]["default"] + " " + player["lastName"]["default"],
+        "position": player["positionCode"]
+    } for player in pbp_json["rosterSpots"]]
+
     # TODO: Compress plays dictionaries into flat format; to be sent to Pandas dataframe.
 
 def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:

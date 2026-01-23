@@ -34,7 +34,21 @@ def clean_pbp(pbp_json: dict[str, Any]) -> None:
         "position": player["positionCode"]
     } for player in pbp_json["rosterSpots"]]
 
-    # TODO: Compress plays dictionaries into flat format; to be sent to Pandas dataframe.
+    #Get rid of period start and stoppage announcements
+    pbp_json["plays"] = [play for play in pbp_json["plays"] if play["typeCode"] not in constants.REMOVED_PLAY_CODES]
+    #Flatten remaining plays, leaving only vital information.
+    pbp_json["plays"] = [{
+        "eventId": play["eventId"],
+        "type": play["typeCode"],
+        "x": -play["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net. #pylint: disable=line-too-long
+        "y": play["yCoord"],
+        "details": play["details"].get(constants.DETAIL_KEYS[play["typeCode"]]),
+        "mainPlayer": play["details"].get(constants.MAIN_PLAYER_KEYS[play["typeCode"]]),
+        "mainTeam": play["details"]["eventOwnerTeamId"],
+        "oppPlayer": play["details"].get(constants.OPP_PLAYER_KEYS[play["typeCode"]]),
+        "assist1": play["details"]["assist1PlayerId"] if play["typeCode"] == 505 else None,
+        "assist2": play["details"]["assist2PlayerId"] if play["typeCode"] == 505 else None
+    } for play in pbp_json["plays"]]
 
 def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
     """

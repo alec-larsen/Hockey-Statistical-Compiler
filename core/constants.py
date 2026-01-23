@@ -9,6 +9,10 @@ ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
 KEEP_PBP = ["id", "gameDate", "awayTeam", "homeTeam", "gameOutcome", "plays", "rosterSpots"]
 KEEP_TEAM = ["id", "abbrev"]
 
+#Several events in the play-by-play are not intended to be used by the model.
+#As such, it is most convenient to remove them.
+REMOVED_PLAY_CODES = [516, 520, 521, 524]
+
 #Some keys in the cleaned play-by-data are dependent on event type.
 #For example, oppPlayer comes from goalieId for goals, but playerId of winnign player for faceoffs
 #Key that should be analyzed for the details key of our cleaned dictionary (by typeCode)

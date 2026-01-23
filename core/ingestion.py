@@ -40,14 +40,22 @@ def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
     pbp_json["plays"] = [{
         "eventId": play["eventId"],
         "type": play["typeCode"],
-        "x": -play["details"]["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["details"]["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net. #pylint: disable=line-too-long
+        "x": -play["details"]["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["details"]["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net.
         "y": play["details"]["yCoord"],
-        "details": play["details"][constants.DETAIL_KEYS[play["typeCode"]]] if constants.DETAIL_KEYS.get(play["typeCode"]) is not None else None, #pylint: disable=line-too-long
-        "mainPlayer": play["details"][constants.MAIN_PLAYER_KEYS[play["typeCode"]]] if constants.MAIN_PLAYER_KEYS.get(play["typeCode"]) is not None else None, #pylint: disable=line-too-long
+        #Not every event type has/needs additional details. Assign all details of events without a specified details field to None
+        "details": play["details"][constants.DETAIL_KEYS[play["typeCode"]]] if constants.DETAIL_KEYS.get(play["typeCode"]) is not None else None,
+        #Consolidate all fields involving main player in given play into one key.
+        #Some plays may not have main players.
+        #Bench minor penalties are not listed as committed by a single player (rather they're served by a specific player). We do not count these against said player.
+        "mainPlayer": (play["details"][constants.MAIN_PLAYER_KEYS[play["typeCode"]]] if constants.MAIN_PLAYER_KEYS.get(play["typeCode"]) is not None and
+                       play["details"].get(constants.MAIN_PLAYER_KEYS.get(play["typeCode"])) is not None else None),
         "mainTeam": play["details"]["eventOwnerTeamId"],
-        "oppPlayer": play["details"][constants.OPP_PLAYER_KEYS[play["typeCode"]]] if constants.OPP_PLAYER_KEYS.get(play["typeCode"]) is not None else None, #pylint: disable=line-too-long
-        "assist1": play["details"]["assist1PlayerId"] if play["typeCode"] == 505 else None,
-        "assist2": play["details"]["assist2PlayerId"] if play["typeCode"] == 505 else None
+        #Not every event involves an opposing player. Assign oppPlayer of any event without an opposing player to None.
+        #Note: some play types that usually have opposing players may not in certain situations (e.g. empty net goals have no listed goalie.)
+        "oppPlayer": (play["details"][constants.OPP_PLAYER_KEYS[play["typeCode"]]] if constants.OPP_PLAYER_KEYS.get(play["typeCode"]) is not None and
+                      play["details"].get(constants.OPP_PLAYER_KEYS.get(play["typeCode"])) is not None else None),
+        "assist1": play["details"]["assist1PlayerId"] if play["typeCode"] == 505 and play["details"].get("assist1PlayerId") is not None else None,
+        "assist2": play["details"]["assist2PlayerId"] if play["typeCode"] == 505 and play["details"].get("assist2PlayerId") is not None else None
     } for play in pbp_json["plays"]]
 
     return pbp_json

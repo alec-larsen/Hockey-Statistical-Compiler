@@ -40,12 +40,12 @@ def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
     pbp_json["plays"] = [{
         "eventId": play["eventId"],
         "type": play["typeCode"],
-        "x": -play["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net. #pylint: disable=line-too-long
-        "y": play["yCoord"],
-        "details": play["details"].get(constants.DETAIL_KEYS[play["typeCode"]]),
-        "mainPlayer": play["details"].get(constants.MAIN_PLAYER_KEYS[play["typeCode"]]),
+        "x": -play["details"]["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["details"]["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net. #pylint: disable=line-too-long
+        "y": play["details"]["yCoord"],
+        "details": play["details"][constants.DETAIL_KEYS[play["typeCode"]]] if constants.DETAIL_KEYS.get(play["typeCode"]) is not None else None, #pylint: disable=line-too-long
+        "mainPlayer": play["details"][constants.MAIN_PLAYER_KEYS[play["typeCode"]]] if constants.MAIN_PLAYER_KEYS.get(play["typeCode"]) is not None else None, #pylint: disable=line-too-long
         "mainTeam": play["details"]["eventOwnerTeamId"],
-        "oppPlayer": play["details"].get(constants.OPP_PLAYER_KEYS[play["typeCode"]]),
+        "oppPlayer": play["details"][constants.OPP_PLAYER_KEYS[play["typeCode"]]] if constants.OPP_PLAYER_KEYS.get(play["typeCode"]) is not None else None, #pylint: disable=line-too-long
         "assist1": play["details"]["assist1PlayerId"] if play["typeCode"] == 505 else None,
         "assist2": play["details"]["assist2PlayerId"] if play["typeCode"] == 505 else None
     } for play in pbp_json["plays"]]

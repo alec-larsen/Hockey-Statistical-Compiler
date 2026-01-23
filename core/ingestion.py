@@ -6,7 +6,7 @@ import requests
 from core import constants
 from core.settings import CONNECTION_SUCCESS_MESSAGE
 
-def clean_pbp(pbp_json: dict[str, Any]) -> None:
+def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
     """
     Clean raw play-by-play data from NHL API into more concise format.
 
@@ -49,6 +49,8 @@ def clean_pbp(pbp_json: dict[str, Any]) -> None:
         "assist1": play["details"]["assist1PlayerId"] if play["typeCode"] == 505 else None,
         "assist2": play["details"]["assist2PlayerId"] if play["typeCode"] == 505 else None
     } for play in pbp_json["plays"]]
+
+    return pbp_json
 
 def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
     """

@@ -69,7 +69,7 @@ def write_play_by_play(game_id: int, keep_raw: bool = False, loud: bool = CONNEC
 
     Args:
         game_id (int): id of game to pull play-by-play of
-        raw (bool): If True, skip cleaning step, writing raw JSON pulled from API directly to file.
+        raw (bool): If True, avoid cleaning step, writing raw JSON pulled from API directly to file.
     """
     try:
         pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
@@ -122,9 +122,13 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
     #Last four digits of maximum game_id yield number of games that have happened so far in the regular season.
     return max_game_id % 10000
 
-def write_next_raw_pbp() -> None:
+def write_next_pbp(keep_raw: bool = True) -> None:
     """
     Write oldest play-by-play data not yet in data/raw/ to JSON.
+    
+    Arguments:
+        keep_raw (bool): True if data is to be written raw from API.
+                         False if data is to be cleaned before writing to file.
     """
     #Get list of all files in data/raw/
     current_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
@@ -140,4 +144,31 @@ def write_next_raw_pbp() -> None:
         raise IndexError("\033[93mList of remaining files to write is empty. All required play-by-play data for model should be present.\033[0m") from exc
 
     #Write this new play-by-play into our dataset
-    write_play_by_play(next_file, keep_raw = True)
+    write_play_by_play(next_file, keep_raw)
+
+def clean_next_pbp() -> None:
+    """
+    Clean oldest play-by-play not yet cleaned in raw data.
+    
+    Note:
+        This function is intended for pre-pulled raw data on the local system.
+        To obtained cleaned versions of data yet to be pulled from the API, call write_next_pbp(False) instead.
+    """
+    #Get list of all files in data/raw/
+    raw_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
+    #Get list of all files in data/clean/
+    clean_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "clean")
+    #Get first file in raw/ but not in clean/; load respective JSON data to clean
+    try:
+        next_file = [f for f in raw_files if f not in clean_files][0]
+
+    except IndexError as exc:
+        raise IndexError("\033[93mList of remaining files to clean is empty. All raw data present has already been cleaned.\033[0m") from exc
+
+    with open(constants.ROOT_DIRECTORY / "data" / "raw" / f"{next_file}", mode="r", encoding="utf-8") as file:
+        pbp_json = json.load(file)
+    #Clean data from this game
+    pbp_json = clean_pbp(pbp_json)
+    #Write cleaned data into clean/
+    with open(constants.ROOT_DIRECTORY / "data" / "clean" /f"{next_file}", mode = "w", encoding="utf-8") as file:
+        json.dump(pbp_json, file, indent=2)

@@ -1,7 +1,11 @@
 from pathlib import Path
+from core.ingestion import gtd
 
 #Root directory of project on local system
 ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
+
+#Lists of all required data for model
+PBP_CODES = list(range(2024020001,2024021313)) + list(range(2025020001,2025020001+gtd()))
 
 #Dictionary keys to be kept in the first step of cleaning. All other keys are 'obsolete' and will be deleted.
 #Some keys contain information obtainable from kept keys (e.g. season from first four digits of game_id)
@@ -11,7 +15,7 @@ KEEP_TEAM = ["id", "abbrev"]
 
 #Several events in the play-by-play are not intended to be used by the model.
 #As such, it is most convenient to remove them.
-REMOVED_PLAY_CODES = [516, 520, 521, 524]
+REMOVED_PLAY_CODES = [516, 520, 521, 523, 524, 535]
 
 #Some keys in the cleaned play-by-data are dependent on event type.
 #For example, oppPlayer comes from goalieId for goals, but playerId of winnign player for faceoffs
@@ -32,7 +36,7 @@ MAIN_PLAYER_KEYS = {
     506: "shootingPlayerId",
     507: "shootingPlayerId",
     508: "shootingPlayerId",
-    509: "comittedByPlayerId",
+    509: "committedByPlayerId",
     525: "playerId"
 }
 
@@ -45,3 +49,8 @@ OPP_PLAYER_KEYS = {
     508: "blockingPlayerId",
     509: "drawnByPlayerId"
 }
+
+#Testing constants
+#Keys that should be present in the cleaned dictionary produced by clean_pbp
+CLEAN_MAIN_KEYS = ["id", "gameDate", "awayTeam", "homeTeam", "gameOutcome", "plays", "rosterSpots", "margin"]
+CLEAN_PLAY_KEYS = ["eventId", "type", "x", "y", "details", "mainPlayer", "oppPlayer", "assist1", "assist2"]

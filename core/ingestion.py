@@ -1,6 +1,7 @@
 import json
 import datetime
 from typing import Any
+import os
 
 import requests
 from core import constants
@@ -60,7 +61,7 @@ def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
 
     return pbp_json
 
-def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
+def write_play_by_play(game_id: int, keep_raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
     """
     Pull play-by-play data from NHL API and write data to local system in JSON format.
     
@@ -81,13 +82,14 @@ def write_play_by_play(game_id: int, raw: bool = False, loud: bool = CONNECTION_
     if loud:
         print(f"\033[92mPull of play-by-play for game {game_id} successful!\033[0m")
 
-    if raw:
+    if keep_raw:
         with open(constants.ROOT_DIRECTORY / "data" / "raw" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
             json.dump(pbp_json, file, indent=2)
 
     else:
-        #Cleaning step
-        raise NotImplementedError("Data cleaning currently in progress.")
+        pbp_json = clean_pbp(pbp_json)
+        with open(constants.ROOT_DIRECTORY / "data" / "clean" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
+            json.dump(pbp_json, file, indent=2)
 
 def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SUCCESS_MESSAGE) -> int:
     """
@@ -119,3 +121,23 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
 
     #Last four digits of maximum game_id yield number of games that have happened so far in the regular season.
     return max_game_id % 10000
+
+def write_next_raw_pbp() -> None:
+    """
+    Write oldest play-by-play data not yet in data/raw/ to JSON.
+    """
+    #Get list of all files in data/raw/
+    current_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
+    #Remove .gitkeep; the only non-JSON file
+    current_files.remove(".gitkeep")
+    #Cut off '.json' extension and cast to int to get game_id
+    current_files = [int(file[:-5]) for file in current_files]
+    #Find lowest game_id whose play-by-play we want for the model that isn't already in our raw dataset.
+    try:
+        next_file = [code for code in constants.PBP_CODES if code not in current_files][0]
+
+    except IndexError as exc:
+        raise IndexError("\033[93mList of remaining files to write is empty. All required play-by-play data for model should be present.\033[0m") from exc
+
+    #Write this new play-by-play into our dataset
+    write_play_by_play(next_file, keep_raw = True)

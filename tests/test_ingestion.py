@@ -17,7 +17,7 @@ params = [
 #Test writing play-by-plays
 @pytest.mark.parametrize("game_id, folder", params)
 def test_write_play_by_play(game_id: int, folder: str):
-    ingestion.write_play_by_play(game_id, raw = True)
+    ingestion.write_play_by_play(game_id, keep_raw = True)
 
     #Open file previous call should have created.
     with open(constants.ROOT_DIRECTORY / "data" / folder / f"{game_id}.json", mode="r", encoding="utf-8") as file:

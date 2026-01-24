@@ -33,7 +33,7 @@ AneStat v2 is currently in active development as my main priority. The following
 
 - Early verification checks for proper web connection
 - Ingestion of play-by-play data by specific `game_id`
-- Compression of raw JSON data; reducing dataload by ~
+- Compression of raw JSON data; reducing total data size to ~34-35% of initial size.
 
 ### Planned
 - Compilation of play-by-play data into team-level statistical summaries

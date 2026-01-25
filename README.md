@@ -61,8 +61,10 @@ As my model continues to progess, I will make my best effort to track how fast m
 Due to rate-limiting on the NHL API, I tend to ingest all required data for the model in batches of 100 games with a time of no less than 1 hour between batch collections. Currently, I have obtained the following runtimes for each batch of 100 play-by-plays ingested:
 
 - 2024 (1-100): 28.235 seconds
+- 2024 (101-200): 28.158 seconds
+- 2024 (201-300): 30.463 seconds
 
-Based on the above runtimes, the model takes, on average, about 0.282 seconds to ingest one play-by-play directly from the NHL API.
+Based on the above runtimes, the model takes, on average, about 0.290 seconds to ingest one play-by-play directly from the NHL API.
 
 ### Cleaning/Compression
 Cleaning the data is done post-ingestion, so, if done from raw data, the entire dataset can be cleaned in one pass.
@@ -70,6 +72,8 @@ Cleaning the data is done post-ingestion, so, if done from raw data, the entire 
 As I have been cleaning my data directly after ingesting it raw from the API, my cleaning calls are also benchamrked in batches of 100. Currently, I have obtained the following runtimes for each batch of 100 play-by-plays cleaned:
 
 - 2024 (1-100): 1.908 seconds
+- 2024 (101-200): 2.129 seconds
+- 2024 (201-300): 1.761 seconds
 
 Based on the above runtimes, the model takes, on average, about 0.019 seconds to clean each play-by-play from the raw data.
 
@@ -78,9 +82,9 @@ Based on the above runtimes, the model takes, on average, about 0.019 seconds to
     
     As a season has 1312 total regular season games, we should expect one season to take about:
     
-    $$1312gm*0.282s/gm \approx 370s$$
+    $$1312gm*0.290s/gm \approx 380s$$
 
-    6m 10s to fully ingest.
+    6m 20s to fully ingest.
     
     Unfortunately, due to rate limiting on the NHL API, an entire season cannot be collected in one pass. As such, the actual time to get all data fully ingested is much longer.
 
@@ -90,4 +94,4 @@ Based on the above runtimes, the model takes, on average, about 0.019 seconds to
 
     $$1312gm*0.019s/gm \approx 24.9s$$
 
-    less than 25 seconds to clean and compress the raw data into a more usable format.
+    about 25 seconds to clean and compress the raw data into a more usable format.

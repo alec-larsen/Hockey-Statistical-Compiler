@@ -1,11 +1,7 @@
 from pathlib import Path
-from core.ingestion import gtd
 
 #Root directory of project on local system
 ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
-
-#Lists of all required data for model
-PBP_CODES = list(range(2024020001,2024021313)) + list(range(2025020001,2025020001+gtd()))
 
 #Dictionary keys to be kept in the first step of cleaning. All other keys are 'obsolete' and will be deleted.
 #Some keys contain information obtainable from kept keys (e.g. season from first four digits of game_id)

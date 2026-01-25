@@ -1,11 +1,10 @@
 import json
-import datetime
 from typing import Any
+import datetime
 import os
 
 import requests
 from core import constants
-from core.settings import CONNECTION_SUCCESS_MESSAGE
 
 def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
     """
@@ -44,7 +43,8 @@ def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
         "x": -play["details"]["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["details"]["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net.
         "y": play["details"]["yCoord"],
         #Not every event type has/needs additional details. Assign all details of events without a specified details field to None
-        "details": play["details"][constants.DETAIL_KEYS[play["typeCode"]]] if constants.DETAIL_KEYS.get(play["typeCode"]) is not None else None,
+        "details": (play["details"][constants.DETAIL_KEYS[play["typeCode"]]] if constants.DETAIL_KEYS.get(play["typeCode"]) is not None and 
+                    play["details"].get(constants.DETAIL_KEYS.get(play["typeCode"])) is not None else None),
         #Consolidate all fields involving main player in given play into one key.
         #Some plays may not have main players.
         #Bench minor penalties are not listed as committed by a single player (rather they're served by a specific player). We do not count these against said player.
@@ -61,37 +61,8 @@ def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
 
     return pbp_json
 
-def write_play_by_play(game_id: int, keep_raw: bool = False, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
-    """
-    Pull play-by-play data from NHL API and write data to local system in JSON format.
-    
-    Option to write to JSON as is (raw), though default settings are to clean data into more usable format.
-
-    Args:
-        game_id (int): id of game to pull play-by-play of
-        raw (bool): If True, avoid cleaning step, writing raw JSON pulled from API directly to file.
-    """
-    try:
-        pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
-        if pbp.status_code != 200:
-            raise ConnectionError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {pbp.status_code} instead.\033[0m") # pylint: disable=line-too-long
-        pbp_json = pbp.json()
-    except TimeoutError as exc:
-        raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
-
-    if loud:
-        print(f"\033[92mPull of play-by-play for game {game_id} successful!\033[0m")
-
-    if keep_raw:
-        with open(constants.ROOT_DIRECTORY / "data" / "raw" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
-            json.dump(pbp_json, file, indent=2)
-
-    else:
-        pbp_json = clean_pbp(pbp_json)
-        with open(constants.ROOT_DIRECTORY / "data" / "clean" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
-            json.dump(pbp_json, file, indent=2)
-
-def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SUCCESS_MESSAGE) -> int:
+#Define way to confirm
+def gtd(today: datetime.date = datetime.date.today()) -> int:
     """
     Find number of games up to, but not including today.
 
@@ -108,9 +79,6 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
     except TimeoutError as exc:
         raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
 
-    if loud:
-        print("\033[92mPull of schedule to date for current season successful!\033[0m")
-
     #Obtain only yesterday's game data.
     #List comprehension generates a list with one element, so we take [0] to access it.
     day = [d for d in sched_json["gameWeek"] if d["date"] == yesterday][0]
@@ -122,7 +90,29 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
     #Last four digits of maximum game_id yield number of games that have happened so far in the regular season.
     return max_game_id % 10000
 
-def write_next_pbp(keep_raw: bool = True) -> None:
+#Lists of all required data for model
+#Note: due to ciruclar import errors, this cannot go in constants.py
+PBP_CODES = list(range(2024020001,2024021313)) + list(range(2025020001,2025020001+gtd()))
+
+def write_play_by_play(game_id: int) -> None:
+    """
+    Pull play-by-play data from NHL API and write data to local system in JSON format.
+
+    Args:
+        game_id (int): id of game to pull play-by-play of
+    """
+    try:
+        pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
+        if pbp.status_code != 200:
+            raise ConnectionError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {pbp.status_code} instead.\033[0m") # pylint: disable=line-too-long
+        pbp_json = pbp.json()
+    except TimeoutError as exc:
+        raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
+
+    with open(constants.ROOT_DIRECTORY / "data" / "raw" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
+        json.dump(pbp_json, file, indent=2)
+
+def write_next_pbp() -> None:
     """
     Write oldest play-by-play data not yet in data/raw/ to JSON.
     
@@ -138,13 +128,13 @@ def write_next_pbp(keep_raw: bool = True) -> None:
     current_files = [int(file[:-5]) for file in current_files]
     #Find lowest game_id whose play-by-play we want for the model that isn't already in our raw dataset.
     try:
-        next_file = [code for code in constants.PBP_CODES if code not in current_files][0]
+        next_file = [code for code in PBP_CODES if code not in current_files][0]
 
     except IndexError as exc:
         raise IndexError("\033[93mList of remaining files to write is empty. All required play-by-play data for model should be present.\033[0m") from exc
 
     #Write this new play-by-play into our dataset
-    write_play_by_play(next_file, keep_raw)
+    write_play_by_play(next_file)
 
 def clean_next_pbp() -> None:
     """

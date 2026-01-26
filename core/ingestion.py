@@ -61,7 +61,6 @@ def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
 
     return pbp_json
 
-#Define way to confirm
 def gtd(today: datetime.date = datetime.date.today()) -> int:
     """
     Find number of games up to, but not including today.

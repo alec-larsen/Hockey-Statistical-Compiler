@@ -33,9 +33,9 @@ AneStat v2 is currently in active development as my main priority. The following
 
 - Early verification checks for proper web connection
 - Ingestion of play-by-play data by specific `game_id`
+- Compression of raw JSON data; reducing total data size to ~34-35% of initial size.
 
 ### Planned
-- Compression of JSON files, keeping only data required downstream
 - Compilation of play-by-play data into team-level statistical summaries
 - Regression model (`sklearn`) trained on team-level data of previous season
 
@@ -44,12 +44,54 @@ AneStat v2 is currently in active development as my main priority. The following
 root/
 ├── core/           # Key steps of pipeline
 ├── data/           # All files in data gitignored
-│   ├── current/    # Play-by-play data from current NHL season (25-26)
-│   ├── last/       # Play-by-play data from last NHL season (24-25)
-│   └── misc/       # All other data required by model
+│   ├── clean/      # Clean play-by-play data, intended for dataframe operations
+│   ├── misc/       # All other data required by model
+│   └── raw/        # Raw play-by-play data, directly pulled from NHL API
 ├── tests/          # Pytest suites
 ├── validation/     # Connection and structure checks
 ├── .gitignore
 ├── README.md
 └── requirements.txt
 ```
+
+## Rough Time Benchmarks
+As my model continues to progess, I will make my best effort to track how fast my model runs its key steps.
+
+### Ingestion
+Due to rate-limiting on the NHL API, I tend to ingest all required data for the model in batches of 100 games with a time of no less than 1 hour between batch collections. Currently, I have obtained the following runtimes for each batch of 100 play-by-plays ingested:
+
+- 2024 (1-100): 28.235 seconds
+- 2024 (101-200): 28.158 seconds
+- 2024 (201-300): 30.463 seconds
+
+Based on the above runtimes, the model takes, on average, about 0.290 seconds to ingest one play-by-play directly from the NHL API.
+
+### Cleaning/Compression
+Cleaning the data is done post-ingestion, so, if done from raw data, the entire dataset can be cleaned in one pass.
+
+As I have been cleaning my data directly after ingesting it raw from the API, my cleaning calls are also benchamrked in batches of 100. Currently, I have obtained the following runtimes for each batch of 100 play-by-plays cleaned:
+
+- 2024 (1-100): 1.908 seconds
+- 2024 (101-200): 2.129 seconds
+- 2024 (201-300): 1.761 seconds
+
+Based on the above runtimes, the model takes, on average, about 0.019 seconds to clean each play-by-play from the raw data.
+
+### Breakdown of Overall Pipeline Time (So Far)
+1. **Ingestion**
+    
+    As a season has 1312 total regular season games, we should expect one season to take about:
+    
+    $$1312gm*0.290s/gm \approx 380s$$
+
+    6m 20s to fully ingest.
+    
+    Unfortunately, due to rate limiting on the NHL API, an entire season cannot be collected in one pass. As such, the actual time to get all data fully ingested is much longer.
+
+2. **Cleaning/Compression**
+
+    Doing the same calculation as we did above with ingestion, we find that, for an entire season of play-by-plays, the model takes:
+
+    $$1312gm*0.019s/gm \approx 24.9s$$
+
+    about 25 seconds to clean and compress the raw data into a more usable format.

@@ -1,43 +1,67 @@
 import json
+from typing import Any
 import datetime
+import os
 
 import requests
 from core import constants
-from core.settings import CONNECTION_SUCCESS_MESSAGE
 
-def write_play_by_play(game_id: int, loud: bool = CONNECTION_SUCCESS_MESSAGE) -> None:
+def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
     """
-    Pull play-by-play data from NHL API and write data to local JSON file.
+    Clean raw play-by-play data from NHL API into more concise format.
 
     Args:
-        game_id (int): id of game to pull play-by-play of
+        pbp_json (dict): Raw play-by-play data from NHL API, as Python dictionary.
     """
-    try:
-        pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
-        if pbp.status_code != 200:
-            raise ConnectionError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {pbp.status_code} instead.\033[0m") # pylint: disable=line-too-long
-        pbp_json = pbp.json()
-    except TimeoutError as exc:
-        raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
+    #Keep only required keys, all others in raw data will not be used in the model.
+    pbp_json = {k: pbp_json[k] for k in constants.KEEP_PBP}
 
-    if loud:
-        print(f"\033[92mPull of play-by-play for game {game_id} successful!\033[0m")
+    #Add margin of victory; positive for home win, negative for away win.
+    pbp_json["margin"] = pbp_json["homeTeam"]["score"] - pbp_json["awayTeam"]["score"]
 
-    #First four digits of game_id are start year for season.
-    #If game_id starts with 2025, our game is from the current NHL season. Save it to the 'current' folder
-    if game_id // 1000000 == 2025:
-        folder = "current"
-    #If game_id starts with 2024, out game is from the last NHL season. Save it to the 'last' folder.
-    elif game_id // 1000000 == 2024:
-        folder = "last"
-    #Else, game is from neither the current or previosu season. We save it to the 'misc' folder
-    else:
-        folder = "misc"
+    #Reduce team desciptions to only keys listed in KEEP_TEAM.
+    pbp_json["homeTeam"] = {k: pbp_json["homeTeam"][k] for k in constants.KEEP_TEAM}
+    pbp_json["awayTeam"] = {k: pbp_json["awayTeam"][k] for k in constants.KEEP_TEAM}
 
-    with open(constants.ROOT_DIRECTORY / "data" / folder /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
-        json.dump(pbp_json, file, indent=2)
+    #Flatten gameOutcome; will be used to note whether game went to overtime or shootout
+    pbp_json["gameOutcome"] = pbp_json["gameOutcome"]["lastPeriodType"]
 
-def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SUCCESS_MESSAGE) -> int:
+    #Flatten rosterSpots; remove unneccesary keys
+    pbp_json["rosterSpots"] = [{
+        "teamId": player["teamId"],
+        "playerId": player["playerId"],
+        "name": player["firstName"]["default"] + " " + player["lastName"]["default"],
+        "position": player["positionCode"]
+    } for player in pbp_json["rosterSpots"]]
+
+    #Get rid of period start and stoppage announcements
+    pbp_json["plays"] = [play for play in pbp_json["plays"] if play["typeCode"] not in constants.REMOVED_PLAY_CODES]
+    #Flatten remaining plays, leaving only vital information.
+    pbp_json["plays"] = [{
+        "eventId": play["eventId"],
+        "type": play["typeCode"],
+        "x": -play["details"]["xCoord"] if play["homeTeamDefendingSide"] == "Right" else play["details"]["xCoord"], #Modifed such that home team always shoots on positive x-coordinate net.
+        "y": play["details"]["yCoord"],
+        #Not every event type has/needs additional details. Assign all details of events without a specified details field to None
+        "details": (play["details"][constants.DETAIL_KEYS[play["typeCode"]]] if constants.DETAIL_KEYS.get(play["typeCode"]) is not None and 
+                    play["details"].get(constants.DETAIL_KEYS.get(play["typeCode"])) is not None else None),
+        #Consolidate all fields involving main player in given play into one key.
+        #Some plays may not have main players.
+        #Bench minor penalties are not listed as committed by a single player (rather they're served by a specific player). We do not count these against said player.
+        "mainPlayer": (play["details"][constants.MAIN_PLAYER_KEYS[play["typeCode"]]] if constants.MAIN_PLAYER_KEYS.get(play["typeCode"]) is not None and
+                       play["details"].get(constants.MAIN_PLAYER_KEYS.get(play["typeCode"])) is not None else None),
+        "mainTeam": play["details"]["eventOwnerTeamId"],
+        #Not every event involves an opposing player. Assign oppPlayer of any event without an opposing player to None.
+        #Note: some play types that usually have opposing players may not in certain situations (e.g. empty net goals have no listed goalie.)
+        "oppPlayer": (play["details"][constants.OPP_PLAYER_KEYS[play["typeCode"]]] if constants.OPP_PLAYER_KEYS.get(play["typeCode"]) is not None and
+                      play["details"].get(constants.OPP_PLAYER_KEYS.get(play["typeCode"])) is not None else None),
+        "assist1": play["details"]["assist1PlayerId"] if play["typeCode"] == 505 and play["details"].get("assist1PlayerId") is not None else None,
+        "assist2": play["details"]["assist2PlayerId"] if play["typeCode"] == 505 and play["details"].get("assist2PlayerId") is not None else None
+    } for play in pbp_json["plays"]]
+
+    return pbp_json
+
+def gtd(today: datetime.date = datetime.date.today()) -> int:
     """
     Find number of games up to, but not including today.
 
@@ -54,9 +78,6 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
     except TimeoutError as exc:
         raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
 
-    if loud:
-        print("\033[92mPull of schedule to date for current season successful!\033[0m")
-
     #Obtain only yesterday's game data.
     #List comprehension generates a list with one element, so we take [0] to access it.
     day = [d for d in sched_json["gameWeek"] if d["date"] == yesterday][0]
@@ -67,3 +88,76 @@ def gtd(today: datetime.date = datetime.date.today(), loud: bool = CONNECTION_SU
 
     #Last four digits of maximum game_id yield number of games that have happened so far in the regular season.
     return max_game_id % 10000
+
+#Lists of all required data for model
+#Note: due to ciruclar import errors, this cannot go in constants.py
+PBP_CODES = list(range(2024020001,2024021313)) + list(range(2025020001,2025020001+gtd()))
+
+def write_play_by_play(game_id: int) -> None:
+    """
+    Pull play-by-play data from NHL API and write data to local system in JSON format.
+
+    Args:
+        game_id (int): id of game to pull play-by-play of
+    """
+    try:
+        pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
+        if pbp.status_code != 200:
+            raise ConnectionError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {pbp.status_code} instead.\033[0m") # pylint: disable=line-too-long
+        pbp_json = pbp.json()
+    except TimeoutError as exc:
+        raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
+
+    with open(constants.ROOT_DIRECTORY / "data" / "raw" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
+        json.dump(pbp_json, file, indent=2)
+
+def write_next_pbp() -> None:
+    """
+    Write oldest play-by-play data not yet in data/raw/ to JSON.
+    
+    Arguments:
+        keep_raw (bool): True if data is to be written raw from API.
+                         False if data is to be cleaned before writing to file.
+    """
+    #Get list of all files in data/raw/
+    current_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
+    #Remove .gitkeep; the only non-JSON file
+    current_files.remove(".gitkeep")
+    #Cut off '.json' extension and cast to int to get game_id
+    current_files = [int(file[:-5]) for file in current_files]
+    #Find lowest game_id whose play-by-play we want for the model that isn't already in our raw dataset.
+    try:
+        next_file = [code for code in PBP_CODES if code not in current_files][0]
+
+    except IndexError as exc:
+        raise IndexError("\033[93mList of remaining files to write is empty. All required play-by-play data for model should be present.\033[0m") from exc
+
+    #Write this new play-by-play into our dataset
+    write_play_by_play(next_file)
+
+def clean_next_pbp() -> None:
+    """
+    Clean oldest play-by-play not yet cleaned in raw data.
+    
+    Note:
+        This function is intended for pre-pulled raw data on the local system.
+        To obtained cleaned versions of data yet to be pulled from the API, call write_next_pbp(False) instead.
+    """
+    #Get list of all files in data/raw/
+    raw_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
+    #Get list of all files in data/clean/
+    clean_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "clean")
+    #Get first file in raw/ but not in clean/; load respective JSON data to clean
+    try:
+        next_file = [f for f in raw_files if f not in clean_files][0]
+
+    except IndexError as exc:
+        raise IndexError("\033[93mList of remaining files to clean is empty. All raw data present has already been cleaned.\033[0m") from exc
+
+    with open(constants.ROOT_DIRECTORY / "data" / "raw" / f"{next_file}", mode="r", encoding="utf-8") as file:
+        pbp_json = json.load(file)
+    #Clean data from this game
+    pbp_json = clean_pbp(pbp_json)
+    #Write cleaned data into clean/
+    with open(constants.ROOT_DIRECTORY / "data" / "clean" /f"{next_file}", mode = "w", encoding="utf-8") as file:
+        json.dump(pbp_json, file, indent=2)

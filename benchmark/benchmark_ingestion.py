@@ -3,9 +3,9 @@ import os
 
 from core.constants import ROOT_DIRECTORY
 
-def benchmark_ingestion() -> tuple[int,float]:
+def benchmark_ingestion() -> tuple[int,float, bool]:
     """
-    Obtain total time for ingestion of 100 play-by-plays, at least 100 are required to write.
+    Obtain total time for ingestion of 100 play-by-plays, if at least 100 are required to write.
     
     If there are less than 100 play-by-plays remaining to write, obtain total time to ingest all
     remaining play-by-plays.
@@ -13,6 +13,7 @@ def benchmark_ingestion() -> tuple[int,float]:
     Returns:
         int: Number of play-by-plays written.
         float: Total time taken to ingest 100 play-by-plays.
+        bool: True if all raw data has been ingested after this call. False otherwise.
     """
     setup = "from core.ingestion import write_next_pbp"
     ingest = "write_next_pbp()"
@@ -25,7 +26,8 @@ def benchmark_ingestion() -> tuple[int,float]:
 
     #Get time (in seconds) for set of ingestion calls
     t = timeit.timeit(stmt = ingest, setup = setup, number = n)
-    return (n,t)
+
+    return (n,t,len(current_files) <= 101)
 
 def benchmark_clean_all(rep: int = 1) -> float:
     """

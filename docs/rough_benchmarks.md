@@ -9,26 +9,29 @@ Due to rate-limiting on the NHL API, I tend to ingest all required data for the 
 - 2024 (201-300): 30.463 seconds
 - 2024 (301-400): 29.936 seconds
 - 2024 (401-500): 30.583 seconds
+- 2024 (501-600): 28.844 seconds
+- 2024 (601-700): 29.414 seconds
+- 2024 (701-800): 31.054 seconds
 
-Based on the above runtimes, the model takes, on average, about 0.295 seconds to ingest one play-by-play directly from the NHL API.
+Based on the above runtimes, the model takes, on average, about 0.296 seconds to ingest one play-by-play directly from the NHL API.
 
 ## Cleaning/Compression
 Cleaning the data is done post-ingestion, so, if done from raw data, the entire dataset can be cleaned in one pass.
 
 I have now implemented a function that cleans all raw data, regardless of whether it has already been cleaned. Recent calls to cleaning have yielded results as follows:
 
-- 2024 (1-500): 9.149 seconds
+- 2024 (1-800): 14.831 seconds
 
-Based on the above runtimes, the model takes, on average, about 0.018 seconds to clean each play-by-play from the raw data.
+Based on the above runtimes, the model takes, on average, about 0.019 seconds to clean each play-by-play from the raw data.
 
 ## Breakdown of Overall Pipeline Time (So Far)
 1. **Ingestion**
     
     As a season has 1312 total regular season games, we should expect one season to take about:
     
-    $$1312gm*0.295s/gm \approx 387s$$
+    $$1312gm*0.296s/gm \approx 388s$$
 
-    6m 27s to fully ingest.
+    6m 28s to fully ingest.
     
     Unfortunately, due to rate limiting on the NHL API, an entire season cannot be collected in one pass. As such, the actual time to get all data fully ingested is much longer.
 
@@ -36,6 +39,6 @@ Based on the above runtimes, the model takes, on average, about 0.018 seconds to
 
     Doing the same calculation as we did above with ingestion, we find that, for an entire season of play-by-plays, the model takes:
 
-    $$1312gm*0.018s/gm \approx 23.6s$$
+    $$1312gm*0.019s/gm \approx 24.9s$$
 
-    less than 25 seconds to clean and compress the raw data into a more usable format.
+    about 25 seconds to clean and compress the raw data into a more usable format.

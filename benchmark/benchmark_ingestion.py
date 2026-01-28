@@ -2,6 +2,7 @@ import timeit
 import os
 
 from core.constants import ROOT_DIRECTORY
+from core.ingestion import PBP_CODES
 
 def benchmark_ingestion() -> tuple[int,float, bool]:
     """
@@ -20,14 +21,19 @@ def benchmark_ingestion() -> tuple[int,float, bool]:
 
     current_files = os.listdir(ROOT_DIRECTORY / "data" / "raw")
 
+    #Number of remaining files to write is total number of games to write minus total already written files
+    #Note that .gitkeep is also in current files, total written files is len(current_files) - 1
+    remaining_files = len(PBP_CODES) - (len(current_files)-1)
+
     #If there are less than 100 remaining play-by-plays to ingest, write all remaining data.
     #Subtract 1 from number of raw data files to account for .gitkeep in data/raw/
-    n = min(len(current_files)-1, 100)
+    n = min(remaining_files, 100)
 
     #Get time (in seconds) for set of ingestion calls
     t = timeit.timeit(stmt = ingest, setup = setup, number = n)
 
-    return (n,t,len(current_files) <= 101)
+    #If we had 100 or less play-by-plays left to write, this function wrote the last of the required data.
+    return (n,t,remaining_files <= 100)
 
 def benchmark_clean_all(rep: int = 1) -> float:
     """

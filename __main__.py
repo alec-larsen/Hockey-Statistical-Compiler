@@ -8,7 +8,6 @@ from benchmark import benchmark_ingestion
 from core import display
 
 try:
-    #Before model runs, verify local system is configured to properly run this program.
     display.print_banner("WELCOME TO ANESTAT 0.1.0")
 
     while True:

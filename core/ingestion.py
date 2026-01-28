@@ -2,9 +2,10 @@ import json
 from typing import Any
 import datetime
 import os
-
 import requests
+
 from core import constants
+from validation.exceptions import ExcessDelayError, NetworkError
 
 def clean_pbp(pbp_json: dict[str, Any]) -> dict[str, Any]:
     """
@@ -73,10 +74,14 @@ def gtd(today: datetime.date = datetime.date.today()) -> int:
     try:
         sched = requests.get(f"https://api-web.nhle.com/v1/schedule/{yesterday}", timeout=10)
         if sched.status_code != 200:
-            raise ConnectionError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {sched.status_code} instead.\033[0m") # pylint: disable=line-too-long
+            raise NetworkError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {sched.status_code} instead.\033[0m")
         sched_json = sched.json() #This gives us a dictionary of the week of games containing yesterday.
-    except TimeoutError as exc:
-        raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
+
+    except requests.exceptions.ConnectionError as exc:
+        raise NetworkError("\033[91mResponse unable to be received from API. Please check internet connection.\033[0m") from exc
+
+    except requests.exceptions.Timeout as exc:
+        raise ExcessDelayError("\033[91mResponse not received for API call within 10 seconds. Please check internet connection.\033[0m") from exc
 
     #Obtain only yesterday's game data.
     #List comprehension generates a list with one element, so we take [0] to access it.
@@ -103,10 +108,14 @@ def write_play_by_play(game_id: int) -> None:
     try:
         pbp = requests.get(f"https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play", timeout=10)
         if pbp.status_code != 200:
-            raise ConnectionError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {pbp.status_code} instead.\033[0m") # pylint: disable=line-too-long
+            raise NetworkError(f"\033[91mCall to NHL API should yield status code 200, obtained status code {pbp.status_code} instead.\033[0m")
         pbp_json = pbp.json()
-    except TimeoutError as exc:
-        raise TimeoutError("\033[91mResponse not received for API call. Please check connection.\033[0m") from exc
+
+    except requests.exceptions.ConnectionError as exc:
+        raise NetworkError(f"\033[91mResponse for game {game_id} unable to be received from API. Please check internet connection.\033[0m") from exc
+
+    except requests.exceptions.Timeout as exc:
+        raise ExcessDelayError("\033[91mResponse not received for API call within 10 seconds. Please check internet connection.\033[0m") from exc
 
     with open(constants.ROOT_DIRECTORY / "data" / "raw" /f"{game_id}.json", mode = "w", encoding="utf-8") as file:
         json.dump(pbp_json, file, indent=2)

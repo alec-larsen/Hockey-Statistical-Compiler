@@ -2,7 +2,7 @@ import time
 import traceback
 from validation.connection import verify_connection_codes
 from validation.presence import verify_raw_data
-from validation.exceptions import VerificationError
+from validation.exceptions import VerificationError, NetworkError, ExcessDelayError
 
 from benchmark import benchmark_ingestion
 from core import display
@@ -47,7 +47,7 @@ try:
 
 #Catch any errors specifically flagged as verification-related.
 #These should not be code-related, but indicative of a local issue (e.g. missing data, network issues)
-except VerificationError as ve:
+except (VerificationError, NetworkError, ExcessDelayError) as ve:
     print(f"\033[91m{ve.__class__.__name__}: {ve}\033[0m")
     input("Please press 'Enter' to exit...")
 

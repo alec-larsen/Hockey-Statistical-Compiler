@@ -27,13 +27,14 @@ This project is intended to improve on a previous statistical model I have alrea
     AneStat v2 will be built with three main ideas in mind; efficiency, comprehensibility, and reproducibility.
 
 ## Key Features
-AneStat v2 is currently in active development as my main priority. The following features have been implemented, or planned
+AneStat v2 is currently in active development as my main priority. The following features have been implemented, or planned:
 
 ### Currently Implemented
 
 - Early verification checks for proper web connection
 - Ingestion of play-by-play data by specific `game_id`
-- Compression of raw JSON data; reducing total data size to ~34-35% of initial size.
+- Cleaning of raw JSON data; reducing total data size to ~34-35% of initial size
+- Basic console interface for calling currently implemented main functions
 
 ### Planned
 - Compilation of play-by-play data into team-level statistical summaries
@@ -55,3 +56,20 @@ root/
 ├── README.md
 └── requirements.txt
 ```
+
+## How To Run
+As this project continues to develop, additional steps will be added to the run instructions.
+
+### 1. Ingestion
+Before any analysis can be run, all data required by the model must be ingested onto the local system.
+
+Unfortunately, due to rate-limiting in the NHL API, especially for more recent game data, all necessary data to run the model cannot be ingested in one pass. As such, at intervals of no less than one hour apart, gradually ingest play-by-play data in batches of 100 from the main interface (option 1 in the start menu).
+
+Please note that calling option 1 will ingest the next 100 **oldest** play-by-plays that are not currently present in the raw data directory (data/raw/). If there are less than 100 play-by-plays left to ingest, AneStat will simply ingest all remaining required data, posting a note that all required data to proceed with model setup is present.
+
+**It is strongly recommended that all raw data be kept on the local system, even after cleaning is run.**
+
+### 2. Cleaning
+Unlike ingestion, all data can be cleaned in a single pass.
+
+Once all data has been ingested, run cleaning function once (option 2 in start menu).

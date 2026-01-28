@@ -21,4 +21,4 @@ def verify_connection_codes():
         except requests.exceptions.ConnectionError as exc:
             raise VerificationError("Unable to reach network; no status code returned. Please check network connection.") from exc
 
-    print("CONNECTION CHECK: PASS - System is able to fetch web content.")
+    print("\033[92mCONNECTION CHECK: PASS - System is able to fetch web content.\033[0m")

@@ -50,3 +50,7 @@ OPP_PLAYER_KEYS = {
 #Keys that should be present in the cleaned dictionary produced by clean_pbp
 CLEAN_MAIN_KEYS = ["id", "gameDate", "awayTeam", "homeTeam", "gameOutcome", "plays", "rosterSpots", "margin"]
 CLEAN_PLAY_KEYS = ["eventId", "type", "x", "y", "details", "mainPlayer", "oppPlayer", "assist1", "assist2"]
+
+#Display constants
+#Length of lines formed by '-' characters when printing banners
+BANNER_LENGTH = 60

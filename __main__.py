@@ -9,7 +9,6 @@ from core import display
 
 try:
     #Before model runs, verify local system is configured to properly run this program.
-    verify_connection_codes() #System fetches correct status codes from get calls.
     display.print_banner("Welcome to AneStat")
 
     while True:
@@ -19,6 +18,8 @@ try:
         #Choosing '1' ingests the next 100 required raw play-by-plays from the NHL API.
         #If less than 100 remain to ingest, we just ingest all remaining required data.
         if choice == "1":
+            #Check that system fetches correct status codes from get calls.
+            verify_connection_codes()
             n,t,all_ingested = benchmark_ingestion.benchmark_ingestion()
             print(f"{n} play-by-plays successfully ingested from NHL API in {t:.3f} seconds")
 

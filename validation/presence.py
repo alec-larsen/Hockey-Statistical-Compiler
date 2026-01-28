@@ -1,7 +1,7 @@
 #Validation functions check for presence of all files required for certain model operations.
 import os
 
-from validation.verification_error import VerificationError
+from validation.exceptions import VerificationError
 from core.constants import ROOT_DIRECTORY
 from core.ingestion import PBP_CODES
 from core.display import missing_games_message

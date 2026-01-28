@@ -1,5 +1,5 @@
 import requests
-from validation.verification_error import VerificationError
+from validation.exceptions import VerificationError
 
 #Status codes the model may reasonably encounter during get requests
 CONNECTION_CODES = [200, 201, 301, 302, 400, 404]

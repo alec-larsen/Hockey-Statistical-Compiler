@@ -2,7 +2,7 @@ import time
 import traceback
 from validation.connection import verify_connection_codes
 from validation.presence import verify_raw_data
-from validation.verification_error import VerificationError
+from validation.exceptions import VerificationError
 
 from benchmark import benchmark_ingestion
 from core import display

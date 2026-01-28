@@ -9,7 +9,7 @@ from core import display
 
 try:
     #Before model runs, verify local system is configured to properly run this program.
-    display.print_banner("Welcome to AneStat")
+    display.print_banner("WELCOME TO ANESTAT 0.1.0")
 
     while True:
         #Ask for another user input for next menu option.
@@ -18,6 +18,7 @@ try:
         #Choosing '1' ingests the next 100 required raw play-by-plays from the NHL API.
         #If less than 100 remain to ingest, we just ingest all remaining required data.
         if choice == "1":
+            display.print_banner("INGESTION: VERIFYING CONNECTION")
             #Check that system fetches correct status codes from get calls.
             verify_connection_codes()
             n,t,all_ingested = benchmark_ingestion.benchmark_ingestion()
@@ -29,6 +30,7 @@ try:
         #Choosing '2' cleans all raw data present in data/raw/
         #Previously cleaned data will be overwritten
         elif choice == "2":
+            display.print_banner("CLEANING: CLEANING ALL RAW DATA")
             t = benchmark_ingestion.benchmark_clean_all()
             print(f"All data on system cleaned in {t:.3f} seconds.")
 
@@ -41,6 +43,8 @@ try:
         #Any other input will not be accepted
         else:
             display.print_banner("INVALID COMMAND INPUT: PLEASE INPUT VALID OPTION")
+
+        display.print_banner("CURRENT PROCESS COMPLETED: AWAITING NEXT COMMAND")
 
 #Catch any errors specifically flagged as verification-related.
 #These should not be code-related, but indicative of a local issue (e.g. missing data, network issues)

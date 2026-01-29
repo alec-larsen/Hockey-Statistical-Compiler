@@ -1,7 +1,14 @@
 from pathlib import Path
+import sys
 
 #Root directory of project on local system
-ROOT_DIRECTORY = Path(__file__).resolve().parents[1]
+DEV_ROOT = Path(__file__).resolve().parents[1]
+
+if getattr(sys, "frozen", False):
+    ROOT_DIRECTORY = Path(sys.executable).parent
+
+else:
+    ROOT_DIRECTORY = DEV_ROOT # type: ignore
 
 #Dictionary keys to be kept in the first step of cleaning. All other keys are 'obsolete' and will be deleted.
 #Some keys contain information obtainable from kept keys (e.g. season from first four digits of game_id)

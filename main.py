@@ -1,14 +1,24 @@
 import time
 import traceback
+
 from validation.connection import verify_connection_codes
 from validation.presence import verify_raw_data
 from validation.exceptions import VerificationError, NetworkError, ExcessDelayError
 
 from benchmark import benchmark_ingestion
 from core import display
+from core.constants import ROOT_DIRECTORY
 
 def run() -> None:
     try:
+        #Specify paths for raw and clean data directories (misc currently not used)
+        raw_dir = ROOT_DIRECTORY / "data" / "raw"
+        clean_dir = ROOT_DIRECTORY / "data" / "clean"
+
+        #Build directories (if they don't already exist)
+        raw_dir.mkdir(parents = True, exist_ok = True)
+        clean_dir.mkdir(parents = True, exist_ok = True)
+
         display.print_banner("WELCOME TO ANESTAT 0.1.0")
 
         while True:

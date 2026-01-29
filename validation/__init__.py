@@ -1,1 +1,1 @@
-from main import run # type: ignore[unused-import]
+from anestat import run # type: ignore[unused-import]

@@ -7,4 +7,4 @@ Notes/
 data/**/*.json
 build/
 dist/
-main.spec
+anestat.spec

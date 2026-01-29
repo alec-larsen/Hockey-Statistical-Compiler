@@ -5,3 +5,6 @@ __pycache__/
 Notes/
 .pytest_cache
 data/**/*.json
+build/
+dist/
+main.spec

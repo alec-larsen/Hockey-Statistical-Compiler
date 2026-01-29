@@ -126,8 +126,6 @@ def write_next_pbp() -> None:
     """
     #Get list of all files in data/raw/
     current_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
-    #Remove .gitkeep; the only non-JSON file
-    current_files.remove(".gitkeep")
     #Cut off '.json' extension and cast to int to get game_id
     current_files = [int(file[:-5]) for file in current_files]
     #Find lowest game_id whose play-by-play we want for the model that isn't already in our raw dataset.
@@ -146,7 +144,7 @@ def clean_all_pbp() -> None:
     Clean all raw data collected (including previously cleaned data).
     """
     #Get list of all files in data/raw/
-    raw_files = [ f for f in os.listdir(constants.ROOT_DIRECTORY / "data" / "raw") if f != ".gitkeep"]
+    raw_files = os.listdir(constants.ROOT_DIRECTORY / "data" / "raw")
 
     for f in raw_files:
         #Get first file in raw/ but not in clean/; load respective JSON data to clean
